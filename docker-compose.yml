@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: my_app_db
+      MYSQL_USER: my_app_user
+      MYSQL_PASSWORD: my_app_password
+    ports:
+      - "3306:3306"
+  
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6378:6379"
+  
+  go_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      PORT: 8080
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: my_app_user
+      DB_PASSWORD: my_app_password
+      DB_NAME: my_app_db
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8080:8080"

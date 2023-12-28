@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"html/template"
+	"strconv"
 
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
@@ -91,20 +92,41 @@ func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 		}
 
 		// Get the updated name and email from the form
-		id := r.Form.Get("id")
+		idStr := r.Form.Get("id")
 		newName := r.Form.Get("name")
 		newEmail := r.Form.Get("email")
 
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		updatedUser := User{
+			ID: id,
+			Name: newName,
+			Email: newEmail,
+		}
+
 		stmt := "UPDATE users SET name = ?, email = ? WHERE id = ?"
-		_, err = db.Exec(stmt, newName, newEmail, id)
+		_, err = db.Exec(stmt, updatedUser.Name, updatedUser.Email, updatedUser.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Failed to update user. Mesage: %s", err.Error())
 			return
 		}
 
+		// Save the updated data is in Redis cache
+		cacheKey := fmt.Sprintf("user:%s", idStr)
+		userJSON, err := json.Marshal(updatedUser)
+		// Save user data to Redis cache
+		err = redisClient.Set(cacheKey, userJSON, 0).Err()
+		if err != nil {
+			fmt.Println("Error saving to Redis cache:", err)
+		}
+
 		// For demonstration purposes, let's print the updated data
-		fmt.Printf("Updated Name: %s, Updated Email: %s, for ID: %s\n", newName, newEmail, id)
+		fmt.Printf("Updated Name: %s, Updated Email: %s, for ID: %s\n", newName, newEmail, idStr)
 
 		// You can perform database updates or any other business logic here
 

@@ -20,7 +20,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     // Parse the HTML template
-    tmpl, err := template.ParseFiles("templates/index.html")
+    tmpl, err := template.ParseFiles("internal/templates/index.html")
     if err != nil {
         http.Error(w, "Internal Server Error", http.StatusInternalServerError)
         return
@@ -133,10 +133,4 @@ func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 		// Redirect to the home page after updating
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
-}
-
-type User struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
 }

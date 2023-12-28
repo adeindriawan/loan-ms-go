@@ -7,8 +7,8 @@ WORKDIR /go/src/app
 # Copy the current directory contents into the container at /go/src/app
 COPY . .
 
-# Initialize the module, the name assumed here: simple-loan
-RUN go mod init simple-loan
+# Initialize the module, the name assumed here: loan-ms-go
+RUN go mod init loan-ms-go
 
 # Install any needed packages specified in go.mod
 RUN go mod download

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 	"github.com/gorilla/mux"
-	"simple-loan/handlers"
-	"simple-loan/services"
+	"loan-ms-go/internal/handlers"
+	"loan-ms-go/services"
 )
 
 func main() {

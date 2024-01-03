@@ -19,6 +19,7 @@ func main() {
 	// Set up your routes with handlers
 	router.HandleFunc("/", handlers.HomeHandler)
 	router.HandleFunc("/add", handlers.AddUserHandler(db, redisClient)).Methods("POST")
+	router.HandleFunc("/users", handlers.GetUsersHandler(db))
 	router.HandleFunc("/user/{id}", handlers.GetUserHandler(db, redisClient))
 	router.HandleFunc("/update", handlers.UpdateUserHandler(db, redisClient)).Methods("POST")
 

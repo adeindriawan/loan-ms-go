@@ -22,6 +22,30 @@ func AddUser(db *sql.DB, user entity.User) (entity.User, error) {
 	return user, nil
 }
 
+func GetUsers(db *sql.DB) ([]entity.User, error) {
+	rows, err := db.Query("SELECT id, name, email FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []entity.User
+	for rows.Next() {
+		var user entity.User
+		err := rows.Scan(&user.ID, &user.Name, &user.Email)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func GetUser(db *sql.DB, userID int) (entity.User, error) {
 	query := "SELECT * FROM users WHERE id = ?"
 	row := db.QueryRow(query, userID)

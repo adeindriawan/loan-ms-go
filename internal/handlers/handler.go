@@ -56,6 +56,57 @@ func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 	}
 }
 
+func GetUsersHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		users, err := usecase.GetUsers(db)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w, "Failed to get users data. Mesage: %s", err.Error())
+			return
+		}
+
+		renderHTMLTemplate(w, "users.html", users)
+	}
+}
+
+func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse form data
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		// Get the updated name and email from the form
+		idStr := r.Form.Get("id")
+		newName := r.Form.Get("name")
+		newEmail := r.Form.Get("email")
+
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		updatedUser := entity.User{
+			ID: id,
+			Name: newName,
+			Email: newEmail,
+		}
+
+		_, err = usecase.UpdateUser(db, updatedUser)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w, "Failed to update user. Mesage: %s", err.Error())
+			return
+		}
+
+		saveUserToCache(redisClient, &updatedUser)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
 func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -131,43 +182,5 @@ func renderHTMLTemplate(w http.ResponseWriter, templateName string, data interfa
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-}
-
-func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Parse form data
-		err := r.ParseForm()
-		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		// Get the updated name and email from the form
-		idStr := r.Form.Get("id")
-		newName := r.Form.Get("name")
-		newEmail := r.Form.Get("email")
-
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		updatedUser := entity.User{
-			ID: id,
-			Name: newName,
-			Email: newEmail,
-		}
-
-		_, err = usecase.UpdateUser(db, updatedUser)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, "Failed to update user. Mesage: %s", err.Error())
-			return
-		}
-
-		saveUserToCache(redisClient, &updatedUser)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

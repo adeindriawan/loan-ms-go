@@ -36,6 +36,44 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+
+func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse form data
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		newName := r.Form.Get("name")
+		newEmail := r.Form.Get("email")
+		newUser := entity.User{
+			Name: newName,
+			Email: newEmail,
+		}
+
+		user, err := usecase.AddUser(db, newUser)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Failed to add user. Mesage: %s", err.Error())
+			return
+
+		}
+
+		cacheKey := fmt.Sprintf("user:%s", user.ID)
+		userJSON, err := json.Marshal(user)
+		// Save user data to Redis cache
+		err = redisClient.Set(cacheKey, userJSON, 0).Err()
+		if err != nil {
+			fmt.Println("Error saving to Redis cache:", err)
+		}
+
+		// Redirect to the home page after updating
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
 func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)

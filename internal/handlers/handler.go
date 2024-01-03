@@ -21,19 +21,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		Email: "johndoe@example.com",
 	}
 
-    // Parse the HTML template
-    tmpl, err := template.ParseFiles("internal/templates/index.html")
-    if err != nil {
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
-
-    // Render the HTML template
-    err = tmpl.Execute(w, user)
-    if err != nil {
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+    renderHTMLTemplate(w, "index.html", user)
 }
 
 
@@ -61,13 +49,7 @@ func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 
 		}
 
-		cacheKey := fmt.Sprintf("user:%s", user.ID)
-		userJSON, err := json.Marshal(user)
-		// Save user data to Redis cache
-		err = redisClient.Set(cacheKey, userJSON, 0).Err()
-		if err != nil {
-			fmt.Println("Error saving to Redis cache:", err)
-		}
+		saveUserToCache(redisClient, &user)
 
 		// Redirect to the home page after updating
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -77,19 +59,17 @@ func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID, err := strconv.Atoi(vars["id"])
+		userIDStr := vars["id"]
+		userID, err := strconv.Atoi(userIDStr)
 		if err != nil {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
 		// Check if user data is in Redis cache
-		cacheKey := fmt.Sprintf("user:%s", userID)
-		userData, err := redisClient.Get(cacheKey).Result()
+		cachedUser, err := getUserFromCache(redisClient, userIDStr)
 		if err == nil {
-			// Data found in cache, return from cache
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(userData))
+			renderHTMLTemplate(w, "user_details.html", cachedUser)
 			return
 		}
 
@@ -101,24 +81,56 @@ func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		// Convert user data to JSON
-		userJSON, err := json.Marshal(user)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "Error converting user data to JSON")
-			return
-		}
+		saveUserToCache(redisClient, &user)
 
-		// Save user data to Redis cache
-		err = redisClient.Set(cacheKey, userJSON, 0).Err()
-		if err != nil {
-			fmt.Println("Error saving to Redis cache:", err)
-		}
+		renderHTMLTemplate(w, "user_details.html", user)
+	}
+}
 
-		// Return user data
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(userJSON)
+func getUserFromCache(redisClient *redis.Client, userIDStr string) (*entity.User, error) {
+	cacheKey := fmt.Sprintf("user:%s", userIDStr)
+	cacheData, err := redisClient.Get(cacheKey).Result()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var cachedUser entity.User
+	err = json.Unmarshal([]byte(cacheData), &cachedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cachedUser, nil
+}
+
+func saveUserToCache(redisClient *redis.Client, user *entity.User) {
+	userIDStr := strconv.Itoa(user.ID)
+	cacheKey := fmt.Sprintf("user:%s", userIDStr)
+	userJSON, err := json.Marshal(user)
+	if err != nil {
+		fmt.Println("Error converting user data to JSON:", err)
+		return
+	}
+
+	err = redisClient.Set(cacheKey, userJSON, 0).Err()
+	if err != nil {
+		fmt.Println("Error saving to Redis cache:", err)
+		return
+	}
+}
+
+func renderHTMLTemplate(w http.ResponseWriter, templateName string, data interface{}) {
+	tmpl, err := template.ParseFiles("internal/templates/" + templateName)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -155,21 +167,7 @@ func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		// Save the updated data is in Redis cache
-		cacheKey := fmt.Sprintf("user:%s", idStr)
-		userJSON, err := json.Marshal(updatedUser)
-		// Save user data to Redis cache
-		err = redisClient.Set(cacheKey, userJSON, 0).Err()
-		if err != nil {
-			fmt.Println("Error saving to Redis cache:", err)
-		}
-
-		// For demonstration purposes, let's print the updated data
-		fmt.Printf("Updated Name: %s, Updated Email: %s, for ID: %s\n", newName, newEmail, idStr)
-
-		// You can perform database updates or any other business logic here
-
-		// Redirect to the home page after updating
+		saveUserToCache(redisClient, &updatedUser)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

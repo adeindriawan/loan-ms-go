@@ -7,5 +7,5 @@ import (
 type Repository[T any] struct {}
 
 func (r *Repository[T]) FindById(db *sql.DB, entity *T) error {
-	_, err := db.Exec("UPDATE")
+	_, err := db.Exec("UPDATE") // this is WIP
 }

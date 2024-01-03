@@ -10,10 +10,12 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
+	"loan-ms-go/internal/entity"
+	"loan-ms-go/internal/usecase"
 )
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	user := User{
+	user := entity.User{
 		ID: 1,
 		Name: "John Doe",
 		Email: "johndoe@example.com",
@@ -37,7 +39,11 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID := vars["id"]
+		userID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
 
 		// Check if user data is in Redis cache
 		cacheKey := fmt.Sprintf("user:%s", userID)
@@ -50,11 +56,7 @@ func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 		}
 
 		// Data not in cache, fetch from MySQL
-		query := "SELECT * FROM users WHERE id = ?"
-		row := db.QueryRow(query, userID)
-
-		var user User
-		err = row.Scan(&user.ID, &user.Name, &user.Email)
+		user, err := usecase.GetUser(db, userID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "User with ID %s not found", userID)
@@ -102,14 +104,13 @@ func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		updatedUser := User{
+		updatedUser := entity.User{
 			ID: id,
 			Name: newName,
 			Email: newEmail,
 		}
 
-		stmt := "UPDATE users SET name = ?, email = ? WHERE id = ?"
-		_, err = db.Exec(stmt, updatedUser.Name, updatedUser.Email, updatedUser.ID)
+		_, err = usecase.UpdateUser(db, updatedUser)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Failed to update user. Mesage: %s", err.Error())

@@ -6,6 +6,7 @@ import (
 	"os"
 	"github.com/gorilla/mux"
 	"loan-ms-go/internal/handlers"
+	"loan-ms-go/internal/config"
 	"loan-ms-go/services"
 )
 
@@ -15,6 +16,10 @@ func main() {
 	// Initialize database connections
 	db := services.InitMySQL()
 	redisClient := services.InitRedis()
+
+	config.Bootstrap(&config.BootstrapConfig{
+		DB: db,
+	})
 
 	// Set up your routes with handlers
 	router.HandleFunc("/", handlers.HomeHandler)

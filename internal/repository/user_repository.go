@@ -5,6 +5,40 @@ import (
 	"loan-ms-go/internal/entity"
 )
 
+type UserRepository struct {
+	*Repository
+}
+
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{
+		Repository: NewRepository(db),
+	}
+}
+
+func (r *UserRepository) GetUsers() ([]entity.User, error) {
+	rows, err := r.DB.Query("SELECT id, name, email FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []entity.User
+	for rows.Next() {
+		var user entity.User
+		err := rows.Scan(&user.ID, &user.Name, &user.Email)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func AddUser(db *sql.DB, user entity.User) (entity.User, error) {
 	query := "INSERT INTO users (name, email) VALUES (?, ?)"
 	result, err := db.Exec(query, user.Name, user.Email)

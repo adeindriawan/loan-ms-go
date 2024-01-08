@@ -16,13 +16,23 @@ func AddUser(db *sql.DB, user entity.User) (entity.User, error) {
 }
 
 func GetUsers(db *sql.DB) ([]entity.User, error) {
-	users, err := repository.GetUsers(db)
+	userRepository := repository.NewUserRepository(db)
+	users, err := userRepository.GetUsers()
 	if err != nil {
 		return nil, err
 	}
 
 	return users, nil
 }
+
+// func GetUsers(db *sql.DB) ([]entity.User, error) {
+// 	users, err := repository.GetUsers(db)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return users, nil
+// }
 
 func GetUser(db *sql.DB, userID int) (entity.User, error) {
 	user, err := repository.GetUserByID(db, userID)

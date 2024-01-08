@@ -2,12 +2,25 @@ package usecase
 
 import (
 	"database/sql"
+	"github.com/go-redis/redis"
 	"loan-ms-go/internal/entity"
 	"loan-ms-go/internal/repository"
 )
 
-func AddUser(db *sql.DB, user entity.User) (entity.User, error) {
-	addedUser, err := repository.AddUser(db, user)
+type UserUseCase struct {
+	*UseCase
+	UserRepository *repository.UserRepository
+}
+
+func NewUserUseCase(cache *redis.Client, userRepository *repository.UserRepository) *UserUseCase {
+	return &UserUseCase{
+		UseCase: NewUseCase(cache),
+		UserRepository: userRepository,
+	}
+}
+
+func (uc *UserUseCase) AddUser(user entity.User) (entity.User, error) {
+	addedUser, err := uc.UserRepository.AddUser(user)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -15,9 +28,8 @@ func AddUser(db *sql.DB, user entity.User) (entity.User, error) {
 	return addedUser, nil
 }
 
-func GetUsers(db *sql.DB) ([]entity.User, error) {
-	userRepository := repository.NewUserRepository(db)
-	users, err := userRepository.GetUsers()
+func (uc *UserUseCase) GetUsers() ([]entity.User, error) {
+	users, err := uc.UserRepository.GetUsers()
 	if err != nil {
 		return nil, err
 	}
@@ -25,25 +37,17 @@ func GetUsers(db *sql.DB) ([]entity.User, error) {
 	return users, nil
 }
 
-// func GetUsers(db *sql.DB) ([]entity.User, error) {
-// 	users, err := repository.GetUsers(db)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return users, nil
-// }
-
-func GetUser(db *sql.DB, userID int) (entity.User, error) {
-	user, err := repository.GetUserByID(db, userID)
+func (uc *UserUseCase) GetUser(userID int) (entity.User, error) {
+	user, err := uc.UserRepository.GetUserByID(userID)
 	if err != nil {
 		return entity.User{}, err
 	}
+
 	return user, nil
 }
 
-func UpdateUser(db *sql.DB, user entity.User) (sql.Result, error) {
-	result, err := repository.UpdateUser(db, user)
+func (uc *UserUseCase) UpdateUser(user entity.User) (sql.Result, error) {
+	result, err := uc.UserRepository.UpdateUser(user)
 	if err != nil {
 		return nil, err
 	}

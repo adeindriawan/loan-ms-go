@@ -30,7 +30,7 @@
             {{range .}}
             <tr>
                 <td>{{.ID}}</td>
-                <td>{{.Name}}</td>
+                <td><a href="/user/{{.ID}}">{{.Name}}</a></td>
                 <td>{{.Email}}</td>
             </tr>
             {{end}}

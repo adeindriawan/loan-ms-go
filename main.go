@@ -17,16 +17,19 @@ func main() {
 	db := services.InitMySQL()
 	redisClient := services.InitRedis()
 
-	config.Bootstrap(&config.BootstrapConfig{
+	cfg := &config.BootstrapConfig{
 		DB: db,
-	})
+		Cache: redisClient,
+	}
+
+	appConfig := config.Bootstrap(cfg)
 
 	// Set up your routes with handlers
 	router.HandleFunc("/", handlers.HomeHandler)
-	router.HandleFunc("/add", handlers.AddUserHandler(db, redisClient)).Methods("POST")
-	router.HandleFunc("/users", handlers.GetUsersHandler(db))
-	router.HandleFunc("/user/{id}", handlers.GetUserHandler(db, redisClient))
-	router.HandleFunc("/update", handlers.UpdateUserHandler(db, redisClient)).Methods("POST")
+	router.HandleFunc("/add", handlers.AddUserHandler(appConfig.UserUseCase)).Methods("POST")
+	router.HandleFunc("/users", handlers.GetUsersHandler(appConfig.UserUseCase))
+	router.HandleFunc("/user/{id}", handlers.GetUserHandler(appConfig.UserUseCase))
+	router.HandleFunc("/update", handlers.UpdateUserHandler(appConfig.UserUseCase)).Methods("POST")
 
 	// Start the HTTP server
 	port := os.Getenv("PORT")

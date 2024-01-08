@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 	"loan-ms-go/internal/usecase"
 )
 
-func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
+func AddUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse form data
 		err := r.ParseForm()
@@ -29,7 +28,7 @@ func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			Email: newEmail,
 		}
 
-		user, err := usecase.AddUser(db, newUser)
+		user, err := uc.AddUser(newUser)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Failed to add user. Mesage: %s", err.Error())
@@ -37,14 +36,14 @@ func AddUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 
 		}
 
-		saveUserToCache(redisClient, &user)
+		saveUserToCache(uc.Cache, &user)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
-func GetUsersHandler(db *sql.DB) http.HandlerFunc {
+func GetUsersHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		users, err := usecase.GetUsers(db)
+		users, err := uc.GetUsers()
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Failed to get users data. Mesage: %s", err.Error())
@@ -55,7 +54,7 @@ func GetUsersHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
+func UpdateUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse form data
 		err := r.ParseForm()
@@ -81,19 +80,19 @@ func UpdateUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			Email: newEmail,
 		}
 
-		_, err = usecase.UpdateUser(db, updatedUser)
+		_, err = uc.UpdateUser(updatedUser)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Failed to update user. Mesage: %s", err.Error())
 			return
 		}
 
-		saveUserToCache(redisClient, &updatedUser)
+		saveUserToCache(uc.Cache, &updatedUser)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
-func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
+func GetUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userIDStr := vars["id"]
@@ -103,22 +102,22 @@ func GetUserHandler(db *sql.DB, redisClient *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		// Check if user data is in Redis cache
-		cachedUser, err := getUserFromCache(redisClient, userIDStr)
+		// Check if user data is in cache
+		cachedUser, err := getUserFromCache(uc.Cache, userIDStr)
 		if err == nil {
 			RenderHTMLTemplate(w, "user_details.html", cachedUser)
 			return
 		}
 
-		// Data not in cache, fetch from MySQL
-		user, err := usecase.GetUser(db, userID)
+		// Data not in cache, fetch from db
+		user, err := uc.GetUser(userID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "User with ID %s not found", userID)
 			return
 		}
 
-		saveUserToCache(redisClient, &user)
+		saveUserToCache(uc.Cache, &user)
 
 		RenderHTMLTemplate(w, "user_details.html", user)
 	}

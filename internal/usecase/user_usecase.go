@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"fmt"
+	"encoding/json"
+	"strconv"
 	"database/sql"
 	"github.com/go-redis/redis"
 	"loan-ms-go/internal/entity"
@@ -25,6 +28,8 @@ func (uc *UserUseCase) AddUser(user entity.User) (entity.User, error) {
 		return entity.User{}, err
 	}
 
+	uc.saveUserToCache(&addedUser)
+
 	return addedUser, nil
 }
 
@@ -38,10 +43,17 @@ func (uc *UserUseCase) GetUsers() ([]entity.User, error) {
 }
 
 func (uc *UserUseCase) GetUserByID(userID int) (entity.User, error) {
+	cachedUser, err := uc.getUserFromCache(strconv.Itoa(userID))
+	if err == nil {
+		return *cachedUser, nil
+	}
+	
 	user, err := uc.UserRepository.GetUserByID(userID)
 	if err != nil {
 		return entity.User{}, err
 	}
+
+	uc.saveUserToCache(&user)
 
 	return user, nil
 }
@@ -51,5 +63,40 @@ func (uc *UserUseCase) UpdateUser(user entity.User) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	uc.saveUserToCache(&user)
 	return result, nil
+}
+
+func (uc *UserUseCase) getUserFromCache(userIDStr string) (*entity.User, error) {
+	cacheKey := fmt.Sprintf("user:%s", userIDStr)
+	cacheData, err := uc.Cache.Get(cacheKey).Result()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var cachedUser entity.User
+	err = json.Unmarshal([]byte(cacheData), &cachedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cachedUser, nil
+}
+
+func (uc *UserUseCase) saveUserToCache(user *entity.User) {
+	userIDStr := strconv.Itoa(user.ID)
+	cacheKey := fmt.Sprintf("user:%s", userIDStr)
+	userJSON, err := json.Marshal(user)
+	if err != nil {
+		fmt.Println("Error converting user data to JSON:", err)
+		return
+	}
+
+	err = uc.Cache.Set(cacheKey, userJSON, 0).Err()
+	if err != nil {
+		fmt.Println("Error saving to Redis cache:", err)
+		return
+	}
 }

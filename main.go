@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"github.com/gorilla/mux"
-	"loan-ms-go/internal/handlers"
 	"loan-ms-go/internal/config"
 	"loan-ms-go/services"
 )
@@ -19,15 +18,9 @@ func main() {
 	cfg := &config.BootstrapConfig{
 		DB: db,
 		Cache: redisClient,
+		Router: router,
 	}
-
-	appConfig := config.Bootstrap(cfg)
-
-	router.HandleFunc("/", handlers.HomeHandler)
-	router.HandleFunc("/users/add", handlers.AddUserHandler(appConfig.UserUseCase)).Methods("POST")
-	router.HandleFunc("/users", handlers.GetUsersHandler(appConfig.UserUseCase))
-	router.HandleFunc("/users/{id}/details", handlers.GetUserByIDHandler(appConfig.UserUseCase))
-	router.HandleFunc("/users/update", handlers.UpdateUserHandler(appConfig.UserUseCase)).Methods("POST")
+	config.Bootstrap(cfg)
 
 	port := os.Getenv("PORT")
 	if port == "" {

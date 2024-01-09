@@ -15,10 +15,6 @@ type BootstrapConfig struct {
 	Router *mux.Router
 }
 
-type AppConfig struct {
-	UserUseCase *usecase.UserUseCase
-}
-
 func Bootstrap(config *BootstrapConfig) {
 	config.Router.HandleFunc("/", handlers.HomeHandler)
 

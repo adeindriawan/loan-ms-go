@@ -81,7 +81,7 @@ func UpdateUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, "/users", http.StatusSeeOther)
 	}
 }
 

@@ -19,7 +19,7 @@ type AppConfig struct {
 	UserUseCase *usecase.UserUseCase
 }
 
-func Bootstrap(config *BootstrapConfig) *AppConfig {
+func Bootstrap(config *BootstrapConfig) {
 	config.Router.HandleFunc("/", handlers.HomeHandler)
 
 	userRepository := repository.NewUserRepository(config.DB)
@@ -29,8 +29,4 @@ func Bootstrap(config *BootstrapConfig) *AppConfig {
 	config.Router.HandleFunc("/users/add", handlers.AddUserHandler(userUseCase)).Methods("POST")
 	config.Router.HandleFunc("/users", handlers.GetUsersHandler(userUseCase))
 	config.Router.HandleFunc("/users/update", handlers.UpdateUserHandler(userUseCase)).Methods("POST")
-
-	return &AppConfig{
-		UserUseCase: userUseCase,
-	}
 }

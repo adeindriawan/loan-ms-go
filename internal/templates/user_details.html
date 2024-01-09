@@ -12,7 +12,7 @@
     <p>Email: {{.Email}}</p>
 
     <h2>Update User</h2>
-    <form method="post" action="/update">
+    <form method="post" action="/users/update">
         <input type="hidden" name="id" value="{{.ID}}">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" value="{{ .Name }}" required><br>

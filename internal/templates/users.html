@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Add New User</h1>
-    <form method="post" action="/add">
+    <form method="post" action="/users/add">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" required><br>
 
@@ -30,7 +30,7 @@
             {{range .}}
             <tr>
                 <td>{{.ID}}</td>
-                <td><a href="/user/{{.ID}}">{{.Name}}</a></td>
+                <td><a href="/users/{{.ID}}/details">{{.Name}}</a></td>
                 <td>{{.Email}}</td>
             </tr>
             {{end}}

@@ -13,7 +13,6 @@ import (
 func main() {
 	router := mux.NewRouter()
 
-	// Initialize database connections
 	db := services.InitMySQL()
 	redisClient := services.InitRedis()
 
@@ -24,14 +23,12 @@ func main() {
 
 	appConfig := config.Bootstrap(cfg)
 
-	// Set up your routes with handlers
 	router.HandleFunc("/", handlers.HomeHandler)
-	router.HandleFunc("/add", handlers.AddUserHandler(appConfig.UserUseCase)).Methods("POST")
+	router.HandleFunc("/users/add", handlers.AddUserHandler(appConfig.UserUseCase)).Methods("POST")
 	router.HandleFunc("/users", handlers.GetUsersHandler(appConfig.UserUseCase))
-	router.HandleFunc("/user/{id}", handlers.GetUserByIDHandler(appConfig.UserUseCase))
-	router.HandleFunc("/update", handlers.UpdateUserHandler(appConfig.UserUseCase)).Methods("POST")
+	router.HandleFunc("/users/{id}/details", handlers.GetUserByIDHandler(appConfig.UserUseCase))
+	router.HandleFunc("/users/update", handlers.UpdateUserHandler(appConfig.UserUseCase)).Methods("POST")
 
-	// Start the HTTP server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

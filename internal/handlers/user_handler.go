@@ -92,7 +92,7 @@ func UpdateUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	}
 }
 
-func GetUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
+func GetUserByIDHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userIDStr := vars["id"]
@@ -110,7 +110,7 @@ func GetUserHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 		}
 
 		// Data not in cache, fetch from db
-		user, err := uc.GetUser(userID)
+		user, err := uc.GetUserByID(userID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "User with ID %s not found", userID)

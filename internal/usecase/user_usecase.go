@@ -37,7 +37,7 @@ func (uc *UserUseCase) GetUsers() ([]entity.User, error) {
 	return users, nil
 }
 
-func (uc *UserUseCase) GetUser(userID int) (entity.User, error) {
+func (uc *UserUseCase) GetUserByID(userID int) (entity.User, error) {
 	user, err := uc.UserRepository.GetUserByID(userID)
 	if err != nil {
 		return entity.User{}, err

@@ -36,3 +36,5 @@ services:
       REDIS_ADDR: redis:6379
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs/:/logs

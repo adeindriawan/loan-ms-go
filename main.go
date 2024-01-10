@@ -14,11 +14,13 @@ func main() {
 
 	db := services.InitMySQL()
 	redisClient := services.InitRedis()
+	logger := services.InitLogger()
 
 	cfg := &config.BootstrapConfig{
 		DB: db,
 		Cache: redisClient,
 		Router: router,
+		Logger: logger,
 	}
 	config.Bootstrap(cfg)
 

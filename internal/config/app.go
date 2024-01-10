@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
+	"loan-ms-go/services"
 	"loan-ms-go/internal/repository"
 	"loan-ms-go/internal/usecase"
 	"loan-ms-go/internal/handlers"
@@ -13,13 +14,14 @@ type BootstrapConfig struct {
 	DB *sql.DB
 	Cache *redis.Client
 	Router *mux.Router
+	Logger *services.Logger
 }
 
 func Bootstrap(config *BootstrapConfig) {
 	config.Router.HandleFunc("/", handlers.HomeHandler)
 
 	userRepository := repository.NewUserRepository(config.DB)
-	userUseCase := usecase.NewUserUseCase(config.Cache, userRepository)
+	userUseCase := usecase.NewUserUseCase(config.Cache, config.Logger, userRepository)
 
 	config.Router.HandleFunc("/users/{id}/details", handlers.GetUserByIDHandler(userUseCase))
 	config.Router.HandleFunc("/users/add", handlers.AddUserHandler(userUseCase)).Methods("POST")

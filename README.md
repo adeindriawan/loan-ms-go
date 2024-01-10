@@ -1,6 +1,12 @@
-# This is an experiment project using Golang
+# This is an experimental simple loan management system project using Golang
 
+run this command:
 ```sh
 docker compose build
-docker compoe up
+docker compose up
+```
+
+or for short:
+```sh
+docker compose up --build
 ```

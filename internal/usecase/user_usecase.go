@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"database/sql"
 	"github.com/go-redis/redis"
+	"loan-ms-go/services"
 	"loan-ms-go/internal/entity"
 	"loan-ms-go/internal/repository"
 )
@@ -15,9 +16,9 @@ type UserUseCase struct {
 	UserRepository *repository.UserRepository
 }
 
-func NewUserUseCase(cache *redis.Client, userRepository *repository.UserRepository) *UserUseCase {
+func NewUserUseCase(cache *redis.Client, logger *services.Logger, userRepository *repository.UserRepository) *UserUseCase {
 	return &UserUseCase{
-		UseCase: NewUseCase(cache),
+		UseCase: NewUseCase(cache, logger),
 		UserRepository: userRepository,
 	}
 }
@@ -38,6 +39,8 @@ func (uc *UserUseCase) GetUsers() ([]entity.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	uc.Logger.InfoLogger.Println("Users data fetched.")
 
 	return users, nil
 }

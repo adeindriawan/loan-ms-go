@@ -98,7 +98,7 @@ func GetUserByIDHandler(uc *usecase.UserUseCase) http.HandlerFunc {
 		user, err := uc.GetUserByID(userID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, "User with ID %s not found", userID)
+			fmt.Fprintf(w, "User with ID %s not found", userIDStr)
 			return
 		}
 

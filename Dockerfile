@@ -17,6 +17,7 @@ RUN go mod download
 RUN go get -u github.com/go-redis/redis
 RUN go get -u github.com/go-sql-driver/mysql
 RUN go get -u github.com/gorilla/mux
+RUN go get -u github.com/stretchr/testify/assert
 RUN go get -u github.com/DATA-DOG/go-sqlmock
 
 # Build the Go app

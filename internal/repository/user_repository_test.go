@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/DATA-DOG/go-sqlmock"
 	"loan-ms-go/internal/entity"
 )
@@ -45,7 +46,6 @@ func TestGetUserByID(t *testing.T) {
 			expectedError: errors.New("sql: no rows in result set"),
 			mockRows:     sqlmock.NewRows([]string{"id", "name", "email"}),
 		},
-		// Add more test cases as needed
 	}
 
 	// Run tests
@@ -72,6 +72,55 @@ func TestGetUserByID(t *testing.T) {
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("Unfulfilled expectations: %s", err)
 			}
+		})
+	}
+}
+
+func TestGetUsers(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock DB: %v", err)
+	}
+	defer mockDB.Close()
+
+	repo := &UserRepository{
+		Repository: NewRepository(mockDB),
+	}
+
+	// Define the test cases
+	tests := []struct {
+		name           string
+		expectedUsers []entity.User
+		expectedError  error
+		mockRows       *sqlmock.Rows
+	}{
+		{
+			name:         	"User found",
+			expectedUsers: 	[]entity.User{
+				{ID: 1, Name: "John Doe", Email: "john@example.com"},
+			},
+			expectedError:	nil,
+			mockRows: 		sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "John Doe", "john@example.com"),
+		},
+	}
+
+	// Run tests
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Set up mock expectations
+			mock.ExpectQuery("SELECT id, name, email FROM users").
+				WillReturnRows(test.mockRows)
+
+			// Call the method being tested
+			users, err := repo.GetUsers()
+
+			// Check the results using testify's assert
+			assert.Equal(t, test.expectedError, err)
+			assert.ElementsMatch(t, test.expectedUsers, users)
+
+			// Ensure all expectations were met
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

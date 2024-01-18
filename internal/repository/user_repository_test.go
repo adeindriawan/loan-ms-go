@@ -32,19 +32,19 @@ func TestGetUserByID(t *testing.T) {
 		mockRows       *sqlmock.Rows
 	}{
 		{
-			name:         "User found",
-			userID:       1,
-			expectedUser: entity.User{ID: 1, Name: "John Doe", Email: "john@example.com"},
-			expectedError: nil,
-			mockRows: sqlmock.NewRows([]string{"id", "name", "email"}).
-				AddRow(1, "John Doe", "john@example.com"),
+			name:         	"User found",
+			userID:       	1,
+			expectedUser: 	entity.User{ID: 1, Name: "John Doe", Email: "john@example.com"},
+			expectedError: 	nil,
+			mockRows: 		sqlmock.NewRows([]string{"id", "name", "email"}).
+							AddRow(1, "John Doe", "john@example.com"),
 		},
 		{
-			name:         "User not found",
-			userID:       2,
-			expectedUser: entity.User{},
-			expectedError: errors.New("sql: no rows in result set"),
-			mockRows:     sqlmock.NewRows([]string{"id", "name", "email"}),
+			name:         	"User not found",
+			userID:       	2,
+			expectedUser: 	entity.User{},
+			expectedError: 	errors.New("sql: no rows in result set"),
+			mockRows:     	sqlmock.NewRows([]string{"id", "name", "email"}),
 		},
 	}
 
@@ -123,4 +123,72 @@ func TestGetUsers(t *testing.T) {
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestAddUser(t *testing.T) {
+	// Create a new mock DB
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock DB: %v", err)
+	}
+	defer mockDB.Close()
+
+	// Create a new UserRepository with the mock DB
+	repo := &UserRepository{
+		Repository: NewRepository(mockDB),
+	}
+
+	// Define the test case
+	testUser := entity.User{
+		Name:  "John Doe",
+		Email: "john@example.com",
+	}
+	mock.ExpectExec("INSERT INTO users").
+		WithArgs(testUser.Name, testUser.Email).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// Call the method being tested
+	resultUser, err := repo.AddUser(testUser)
+
+	// Check the results
+	assert.NoError(t, err)
+	assert.Equal(t, 1, resultUser.ID) // Assuming the ID is set to 1 in the mock result
+
+	// Ensure all expectations were met
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateUser(t *testing.T) {
+	// Setup Mock Database
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock DB: %v", err)
+	}
+	defer mockDB.Close()
+
+	// Create UserRepository with Mock Database
+	repo := &UserRepository{
+		Repository: NewRepository(mockDB),
+	}
+
+	// Define Test User and Expectations
+	testUser := entity.User{
+		ID:    1,
+		Name:  "Updated Name",
+		Email: "updated@example.com",
+	}
+	mock.ExpectExec("UPDATE users").
+		WithArgs(testUser.Name, testUser.Email, testUser.ID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// Call the Method Being Tested
+	result, err := repo.UpdateUser(testUser)
+
+	// Check the Results
+	assert.NoError(t, err)
+	affectedRows, _ := result.RowsAffected()
+	assert.Equal(t, int64(1), affectedRows)
+
+	// Ensure Expectations Were Met
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
